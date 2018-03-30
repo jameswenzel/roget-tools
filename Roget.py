@@ -16,6 +16,7 @@ class Roget:
             self.category_node_code_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/full_childparent.txt', 'rb') as f:
             self.node_parent_dict = cPickle.load(f, encoding='utf-8')
+        # TODO: fix capitalization?
         with open('roget/num_cat.txt', 'rb') as f:
             self.code_category_dict = cPickle.load(f, encoding='utf-8')
 
@@ -52,23 +53,21 @@ class Roget:
 
     def categorize_word(self, word, levels=0):
         '''
-        Para
         Given a word, checks if in thesaurus and returns all base categories;
-        if not in thesaurus, returns the word with category code "0000";
-        "levels" sets the specificity of the categorization,
-        viz. how many nodes up from the base category is the category returned'''
+        if not in thesaurus, returns None
+        "levels" determines how many nodes up from the base category are the
+        categories returned
+        '''
         if word in self.word_categories_dict:
-            cats = [(self.code_category_dict[x], x) for x in self.word_categories_dict[word]]
+            cats = [(self.code_category_dict[x], x) for x
+                    in self.word_categories_dict[word]]
         else:
-            cats = [(word, '0000')]
-        counter = 0
-        while counter < levels:
-            for ndx, cat in enumerate(cats):
-                if cat[1] != '0000':
-                    if cat[1] not in ['A', 'B', 'C', 'D', 'E', 'F']:
-                        node = self.node_parent_dict[cat[1]]
-                        cats[ndx] = (self.node_code_category_dict[node], node)
-            counter += 1
+            return None
+        for _ in range(levels):
+            for i, cat in enumerate(cats):
+                if cat and cat[1] not in {'A', 'B', 'C', 'D', 'E', 'F'}:
+                    node = self.node_parent_dict[cat[1]]
+                    cats[i] = (self.node_code_category_dict[node], node)
         return cats
 
     def categorize_words(self, text, levels=0):
@@ -80,19 +79,16 @@ class Roget:
             wordlist = self.extract_words(text)
         else:
             wordlist = [x.lower() for x in text if x.isalpha()]
-        newlist = [self.categorize_word(x, levels=levels) for x in wordlist]
-        bagofwords = []
-        for x in newlist:
-            for y in x:
-                bagofwords.append(y)
-        return bagofwords
+        categorized = [self.categorize_word(x, levels=levels) for x
+                       in wordlist]
+        return [y for x in categorized for y in x]
 
     def get_category_freqs(self, text_list, levels=0):
         '''returns dict of word category frequencies of levels=n for a text,
         throwing out words not in the thesaurus'''
         frequency_counts = defaultdict(lambda: 0)
         bagofwords = self.categorize_words(text_list, levels=levels)
-        good_cats = [x for x in bagofwords if x[1] != '0000']
+        good_cats = [x for x in bagofwords if x]
         for x in good_cats:
             frequency_counts[x] += 1
         return frequency_counts
@@ -128,29 +124,27 @@ class Roget:
             syn_paths.append(path)
         return syn_paths
 
-    def get_category_words(self, category):
-        '''returns all words in given base category (accepts code or category name)'''
-        cat_words = []
-        if category in self.code_category_dict.keys():
-            cat_words.append((self.code_category_dict[category], self.category_word_dict[category]))
-        elif category.upper() in self.code_category_dict.values():
+    def get_words(self, category):
+        '''Returns all words in given base category (accepts code or category name)'''
+        if category in self.code_category_dict:
+            return (self.code_category_dict[category],
+                    self.category_word_dict[category])
+        elif category.lower() in self.category_code_dict:
             code = self.category_code_dict[category.lower()]
-            cat_words.append((category.upper(), self.category_word_dict[code]))
-        return cat_words
+            return(category.upper(), self.category_word_dict[code])
+        return []
 
     def get_all_related_words(self, word):
         '''given word, return all other words in word's categories'''
-        all_cats = [x for x in self.word_categories_dict[word]]
-        cat_words = []
-        for cat in all_cats:
-            cat_words.append((self.code_category_dict[cat], self.category_word_dict[cat]))
-        return cat_words
+        cats = [x for x in self.word_categories_dict[word]]
+        return tuple((self.code_category_dict[cat],
+                      self.category_word_dict[cat]) for cat in cats)
 
     def distance_to_node(self, word1, node):
         '''given word and node, return distance (in nodes) from base category to node;
         if node not in path to "WORDS" node, distance equals sum of word's and node's
         path to "WORDS"'''
-        if node in self.node_code_category_dict.keys():
+        if node in self.node_code_category_dict:
             node = self.node_code_category_dict[node]
         wordcats = [x[0] for x in self.categorize_word(word1)]
         word1 = word1.lower()
