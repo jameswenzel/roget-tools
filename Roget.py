@@ -7,27 +7,17 @@ class Roget:
         with open('roget/thes_dict.txt', 'rb') as f:
             self.word_categories_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/thes_cat.txt', 'rb') as f:
-            self.thes_cat = cPickle.load(f, encoding='utf-8')
-        with open('roget/thes_cat_list.txt', 'rb') as f:
-            self.thes_cat_list = cPickle.load(f, encoding='utf-8')
+            self.category_word_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/cat_num.txt', 'rb') as f:
-            self.cat_num = cPickle.load(f, encoding='utf-8')
-        with open('roget/basecat_dict.txt', 'rb') as f:
-            self.basecat_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/parent_dict.txt', 'rb') as f:
-            self.parent_dict = cPickle.load(f, encoding='utf-8')
+            self.category_code_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/node_codes.txt', 'rb') as f:
-            self.node_codes = cPickle.load(f, encoding='utf-8')
+            self.node_code_category_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/code_nodes.txt', 'rb') as f:
-            self.code_nodes = cPickle.load(f, encoding='utf-8')
-        with open('roget/basecat_parent.txt', 'rb') as f:
-            self.basecat_parent = cPickle.load(f, encoding='utf-8')
-        with open('roget/node_child-parent.txt', 'rb') as f:
-            self.node_childparent = cPickle.load(f, encoding='utf-8')
+            self.category_node_code_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/full_childparent.txt', 'rb') as f:
-            self.full_childparent = cPickle.load(f, encoding='utf-8')
+            self.node_parent_dict = cPickle.load(f, encoding='utf-8')
         with open('roget/num_cat.txt', 'rb') as f:
-            self.num_cat = cPickle.load(f, encoding='utf-8')
+            self.code_category_dict = cPickle.load(f, encoding='utf-8')
 
     def add_custom_words(self, fid='roget/add_words.txt'):
         ''' Load a file of words and connections into THES_DICT '''
@@ -49,24 +39,26 @@ class Roget:
         print("Words Added to THES_DICT:")
         print(' '.join(self.added_words))
 
-    def extract_words(self, myText, lower=True):
+    def extract_words(self, text, lower=True):
         '''Removes punctuation and returns list of words; 'lower' flag determines case'''
         puncMarks = [',', '.', '?', '!', ':', ';',
                      '\'', '\"', '(', ')', '[', ']', '-']
         for item in puncMarks:
-            myText = myText.replace(item, '')
+            text = text.replace(item, '')
         if lower:
-            lowerText = myText.lower()
+            lowerText = text.lower()
         textWords = lowerText.split()
         return textWords
 
     def categorize_word(self, word, levels=0):
-        '''Given a word, checks if in thesaurus and returns all base categories;
+        '''
+        Para
+        Given a word, checks if in thesaurus and returns all base categories;
         if not in thesaurus, returns the word with category code "0000";
         "levels" sets the specificity of the categorization,
         viz. how many nodes up from the base category is the category returned'''
         if word in self.word_categories_dict:
-            cats = [(self.num_cat[x], x) for x in self.word_categories_dict[word]]
+            cats = [(self.code_category_dict[x], x) for x in self.word_categories_dict[word]]
         else:
             cats = [(word, '0000')]
         counter = 0
@@ -74,8 +66,8 @@ class Roget:
             for ndx, cat in enumerate(cats):
                 if cat[1] != '0000':
                     if cat[1] not in ['A', 'B', 'C', 'D', 'E', 'F']:
-                        node = self.full_childparent[cat[1]]
-                        cats[ndx] = (self.node_codes[node], node)
+                        node = self.node_parent_dict[cat[1]]
+                        cats[ndx] = (self.node_code_category_dict[node], node)
             counter += 1
         return cats
 
@@ -107,11 +99,11 @@ class Roget:
 
     def get_all_category_freqs(self, text_list):
         freqlist = self.get_category_freqs(text_list)
-        fulldict = {x: 0 for x in self.num_cat.keys()}
+        fulldict = {x: 0 for x in self.code_category_dict.keys()}
         for key in freqlist.keys():
             if key[1] in fulldict:
                 fulldict[key[1]] = freqlist[key]
-        newdict = {(self.num_cat[x], x): fulldict[x] for x in fulldict.keys()}
+        newdict = {(self.code_category_dict[x], x): fulldict[x] for x in fulldict.keys()}
         return sorted(newdict.items(), key=lambda x: x[0][1])
 
     def get_category_hierarchies(self, word):
@@ -124,14 +116,14 @@ class Roget:
         for cat in all_cats:
             path = []
             counter = 0
-            path.append((counter, self.num_cat[cat]))
+            path.append((counter, self.code_category_dict[cat]))
             node = cat
             while True:
                 counter += 1
-                parent = self.full_childparent[node]
-                path.append((counter, self.node_codes[parent]))
+                parent = self.node_parent_dict[node]
+                path.append((counter, self.node_code_category_dict[parent]))
                 node = parent
-                if parent not in self.full_childparent.keys():
+                if parent not in self.node_parent_dict.keys():
                     break
             syn_paths.append(path)
         return syn_paths
@@ -139,11 +131,11 @@ class Roget:
     def get_category_words(self, category):
         '''returns all words in given base category (accepts code or category name)'''
         cat_words = []
-        if category in self.num_cat.keys():
-            cat_words.append((self.num_cat[category], self.thes_cat[category]))
-        elif category.upper() in self.num_cat.values():
-            code = self.cat_num[category.lower()]
-            cat_words.append((category.upper(), self.thes_cat[code]))
+        if category in self.code_category_dict.keys():
+            cat_words.append((self.code_category_dict[category], self.category_word_dict[category]))
+        elif category.upper() in self.code_category_dict.values():
+            code = self.category_code_dict[category.lower()]
+            cat_words.append((category.upper(), self.category_word_dict[code]))
         return cat_words
 
     def get_all_related_words(self, word):
@@ -151,15 +143,15 @@ class Roget:
         all_cats = [x for x in self.word_categories_dict[word]]
         cat_words = []
         for cat in all_cats:
-            cat_words.append((self.num_cat[cat], self.thes_cat[cat]))
+            cat_words.append((self.code_category_dict[cat], self.category_word_dict[cat]))
         return cat_words
 
     def distance_to_node(self, word1, node):
         '''given word and node, return distance (in nodes) from base category to node;
         if node not in path to "WORDS" node, distance equals sum of word's and node's
         path to "WORDS"'''
-        if node in self.node_codes.keys():
-            node = self.node_codes[node]
+        if node in self.node_code_category_dict.keys():
+            node = self.node_code_category_dict[node]
         wordcats = [x[0] for x in self.categorize_word(word1)]
         word1 = word1.lower()
         distances = []
@@ -250,23 +242,23 @@ class Roget:
             return [(0, 'WORDS')]
         elif category.upper() == 'WORDS':
             return [(0, 'WORDS')]
-        elif category.lower() in self.node_codes.keys():
+        elif category.lower() in self.node_code_category_dict.keys():
             cat = category.lower()
-        elif category.upper() in self.node_codes.values():
-            cat = self.code_nodes[category.upper()]
+        elif category.upper() in self.node_code_category_dict.values():
+            cat = self.category_node_code_dict[category.upper()]
         # else:
             # NOTE: MAY NEED RETURN THAT DOESN'T MESS UP DISTANCE CALCULATIONS IN NODE CLUSTRING ALGORITHM BELOW
             # return [(0,'WORDS')]
         path = []
         counter = 0
-        path.append((counter, self.node_codes[cat]))
+        path.append((counter, self.node_code_category_dict[cat]))
         node = cat
         while True:
             counter += 1
-            parent = self.full_childparent[node]
-            path.append((counter, self.node_codes[parent]))
+            parent = self.node_parent_dict[node]
+            path.append((counter, self.node_code_category_dict[parent]))
             node = parent
-            if parent not in self.full_childparent.keys():
+            if parent not in self.node_parent_dict.keys():
                 break
         return path
 
@@ -312,7 +304,7 @@ class Roget:
         if verbose:
             print("excluded words:", notwords)
         node_distances = []
-        nodelist = self.full_childparent.keys()
+        nodelist = self.node_parent_dict.keys()
         for ndx, node in enumerate(nodelist):
             dists = [self.distance_to_node(word, node) for word in wordlist]
             if verbose:
@@ -324,11 +316,11 @@ class Roget:
             if verbose:
                 print(ndx, node, aggdist, avg_node_distance)
         node_distances = sorted(node_distances, key=lambda x: x[1])
-        node_distances_named = [(node, self.node_codes[node], dist, (float(
+        node_distances_named = [(node, self.node_code_category_dict[node], dist, (float(
             dist)/len(wordlist))) for (node, dist) in node_distances]
         distlist = [x[1] for x in node_distances]
         mindist = min(distlist)
-        mindist_nodes = [(node, self.node_codes[node], dist, (float(
+        mindist_nodes = [(node, self.node_code_category_dict[node], dist, (float(
             dist)/len(wordlist))) for (node, dist) in node_distances if dist == mindist]
         if N > 0:
             return node_distances_named[:N]
