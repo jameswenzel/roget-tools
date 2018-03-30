@@ -2,7 +2,8 @@ import _pickle as cPickle
 from collections import defaultdict
 
 
-class Roget:
+class Roget(object):
+
     def __init__(self):
         with open('roget/thes_dict.txt', 'rb') as f:
             self.word_categories_dict = cPickle.load(f, encoding='utf-8')
@@ -34,14 +35,26 @@ class Roget:
                     self.added_words.append(wd_pair[0])
                 else:
                     if wd_pair[1] not in self.word_categories_dict[wd_pair[0]]:
-                        self.word_categories_dict[wd_pair[0]].append(wd_pair[1])
+                        self.word_categories_dict[wd_pair[0]].append(
+                            wd_pair[1])
 
         self.added_words = list(set(self.added_words))
         print("Words Added to THES_DICT:")
         print(' '.join(self.added_words))
 
     def extract_words(self, text, lower=True):
-        '''Removes punctuation and returns list of words; 'lower' flag determines case'''
+        """Removes punctuation from text and returns a list of words
+
+        Arguments:
+            text {str} -- text from which to extract words
+
+        Keyword Arguments:
+            lower {bool} -- case of words extracted (default: {True})
+
+        Returns:
+            list of str -- extracted words
+        """
+
         puncMarks = [',', '.', '?', '!', ':', ';',
                      '\'', '\"', '(', ')', '[', ']', '-']
         for item in puncMarks:
@@ -52,12 +65,19 @@ class Roget:
         return textWords
 
     def categorize_word(self, word, levels=0):
-        '''
-        Given a word, checks if in thesaurus and returns all base categories;
-        if not in thesaurus, returns None
-        "levels" determines how many nodes up from the base category are the
-        categories returned
-        '''
+        """Gets all base categories of a word, returns list of (cateogry, code)
+
+        Arguments:
+            word {str} -- word to categorize
+
+        Keyword Arguments:
+            levels {int} -- how many levels above base category (default: {0})
+
+        Returns:
+            list of tuple of str or None -- list of (category, code) tuples or
+                None, if not found
+        """
+
         if word in self.word_categories_dict:
             cats = [(self.code_category_dict[x], x) for x
                     in self.word_categories_dict[word]]
@@ -71,17 +91,26 @@ class Roget:
         return cats
 
     def categorize_words(self, text, levels=0):
-        '''Given a text (type str) or list of tokens (type list) , 
-        makes a list of lowercase words with nonalphas thrown out
-        and categorizes each up n levels from the base category; 
-        words are replaced with their categories and returned as a list'''
+        """Get all categories of a text or list of words
+
+        Arguments:
+            text {str | list of str} -- text to categorize
+
+        Keyword Arguments:
+            levels {int} -- how many levels up to classify (default: {0})
+
+        Returns:
+            list of tuple of str or None -- list of (category, code) tuples or
+                None, if not found
+        """
+
         if type(text) == 'str':
             wordlist = self.extract_words(text)
         else:
             wordlist = [x.lower() for x in text if x.isalpha()]
         categorized = [self.categorize_word(x, levels=levels) for x
                        in wordlist]
-        return [y for x in categorized for y in x]
+        return [y for x in categorized for y in x if y] or None
 
     def get_category_freqs(self, text_list, levels=0):
         '''returns dict of word category frequencies of levels=n for a text,
@@ -99,7 +128,8 @@ class Roget:
         for key in freqlist.keys():
             if key[1] in fulldict:
                 fulldict[key[1]] = freqlist[key]
-        newdict = {(self.code_category_dict[x], x): fulldict[x] for x in fulldict.keys()}
+        newdict = {(self.code_category_dict[x], x):
+                   fulldict[x] for x in fulldict.keys()}
         return sorted(newdict.items(), key=lambda x: x[0][1])
 
     def get_category_hierarchies(self, word):
@@ -158,7 +188,7 @@ class Roget:
             for cat in wordcats:
                 pathlength1 = self.get_category_distance(cat, 'WORDS')
                 pathlength2 = self.get_category_distance(node, 'WORDS')
-                distances.append(pathlength1+pathlength2)
+                distances.append(pathlength1 + pathlength2)
         dist = min(distances)
         return dist
 
@@ -293,7 +323,6 @@ class Roget:
                 notwords.append(self.categorize_word(word))
             else:
                 wordlist.append(word)
-        #notwords = list(set(notwords))
         word_basecats = []
         if verbose:
             print("excluded words:", notwords)
@@ -306,16 +335,16 @@ class Roget:
             aggdist = sum(dists)
             node_entry = (node, aggdist)
             node_distances.append(node_entry)
-            avg_node_distance = aggdist/float(len(wordlist))
+            avg_node_distance = aggdist / float(len(wordlist))
             if verbose:
                 print(ndx, node, aggdist, avg_node_distance)
         node_distances = sorted(node_distances, key=lambda x: x[1])
         node_distances_named = [(node, self.node_code_category_dict[node], dist, (float(
-            dist)/len(wordlist))) for (node, dist) in node_distances]
+            dist) / len(wordlist))) for (node, dist) in node_distances]
         distlist = [x[1] for x in node_distances]
         mindist = min(distlist)
         mindist_nodes = [(node, self.node_code_category_dict[node], dist, (float(
-            dist)/len(wordlist))) for (node, dist) in node_distances if dist == mindist]
+            dist) / len(wordlist))) for (node, dist) in node_distances if dist == mindist]
         if N > 0:
             return node_distances_named[:N]
         else:
@@ -328,13 +357,13 @@ class Roget:
         from os import listdir
         flist = listdir(folder)[1:]
         headlist = [x[:-4] for x in flist]
-        with open(folder+flist[0], 'r') as thefile:
+        with open(folder + flist[0], 'r') as thefile:
             reader = thefile.read()
             thingy = self.get_all_category_freqs(reader)
             indexlist = [x[0] for x in thingy]
         newarray = []
         for f in flist:
-            with open(folder+f, 'r') as current_file:
+            with open(folder + f, 'r') as current_file:
                 text = current_file.read()
             freqs = self.get_all_category_freqs(text)
             newarray.append([x[1] for x in freqs])
@@ -342,5 +371,5 @@ class Roget:
         nparray = np.transpose(nparray)
         df = pd.DataFrame(nparray, index=indexlist, columns=headlist)
         if csv:
-            df.to_csv(folder+'summary.csv')
+            df.to_csv(folder + 'summary.csv')
         return df
