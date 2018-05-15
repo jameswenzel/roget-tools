@@ -1,6 +1,8 @@
 import _pickle as cPickle
 from collections import defaultdict
 
+version = '0.0.1'
+
 
 class Roget(object):
 
