@@ -11,10 +11,10 @@ setup(
     description="Python implementation of Roget's thesaurus",
     author="James Wenzel & Phillip R. Polefrone",
     author_email="wenzel.james.r@gmail.com",
-    url="https://github.com/jameswenzel/Lyric-Wiki-Scraper",
-    download_url=('https://github.com/jameswenzel/pylyrics3/tarball/'
-                  '{0}'.format(version)),
-    license="Apache License, Version 2.0",
+    url="https://github.com/jameswenzel/roget-tools",
+    download_url=('https://github.com/jameswenzel/roget-tools/tarball/' +
+                  version),
+    license="GNU",
     keywords=['roget', 'thesaurus', "roget's", 'dictionary', 'similie',
               'similies', 'semantic', 'space'],
     classifiers=[],

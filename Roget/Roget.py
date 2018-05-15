@@ -1,26 +1,27 @@
 import _pickle as cPickle
+import os
 from collections import defaultdict
 
-version = '0.0.1'
+_file_path = os.path.dirname(__file__)
 
 
 class Roget(object):
 
     def __init__(self):
-        with open('roget/thes_dict.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/thes_dict.txt'), 'rb') as f:
             self.word_categories_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/thes_cat.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/thes_cat.txt'), 'rb') as f:
             self.category_word_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/cat_num.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/cat_num.txt'), 'rb') as f:
             self.category_code_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/node_codes.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/node_codes.txt'), 'rb') as f:
             self.node_code_category_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/code_nodes.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/code_nodes.txt'), 'rb') as f:
             self.category_node_code_dict = cPickle.load(f, encoding='utf-8')
-        with open('roget/full_childparent.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/full_childparent.txt'), 'rb') as f:
             self.node_parent_dict = cPickle.load(f, encoding='utf-8')
         # TODO: fix capitalization?
-        with open('roget/num_cat.txt', 'rb') as f:
+        with open(os.path.join(_file_path, 'roget/num_cat.txt'), 'rb') as f:
             self.code_category_dict = cPickle.load(f, encoding='utf-8')
 
     def add_custom_words(self, fid='roget/add_words.txt'):
