@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version=$(echo "from Roget import version; print(version)" | python)
+version=$(echo "from PyRoget import version; print(version)" | python)
 
 git add .
 git commit -m "version update"
