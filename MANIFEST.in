@@ -1,1 +1,1 @@
-include roget/*.txt
+include Roget/roget/*.txt
