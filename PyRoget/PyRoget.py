@@ -5,7 +5,7 @@ from collections import defaultdict
 _file_path = os.path.dirname(__file__)
 
 
-class Roget(object):
+class PyRoget(object):
 
     def __init__(self):
         with open(os.path.join(_file_path, 'roget/thes_dict.txt'), 'rb') as f:

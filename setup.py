@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from setuptools import setup
-from Roget import version
+from PyRoget import version
 
 setup(
     name='PyRoget',
