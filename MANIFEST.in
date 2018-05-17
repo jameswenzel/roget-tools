@@ -1,1 +1,1 @@
-include Roget/roget/*.txt
+include PyRoget/roget/*.txt
